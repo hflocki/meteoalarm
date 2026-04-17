@@ -1,11 +1,9 @@
 {
   "domain": "meteoalarm",
   "name": "MeteoAlarm Wetterwarnungen",
-  "version": "1.0.0",
-  "config_flow": true,
-  "documentation": "https://api.meteoalarm.org",
+  "documentation": "https://www.meteoalarm.org",
   "requirements": [],
-  "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@dein_name"],
+  "version": "1.0.0",
   "iot_class": "cloud_polling"
 }

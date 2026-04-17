@@ -1,53 +1,53 @@
-# const.py
 DOMAIN = "meteoalarm"
-CONF_API_KEY = "api_key"
-CONF_COUNTRY = "country"
-SCAN_INTERVAL_MINUTES = 10
-
-# Pfad laut OpenAPI-Dokumentation
-
-BASE_URL = "https://api.meteogate.eu/edr/v1/collections/warnings/locations/{country}"
+SCAN_INTERVAL_MINUTES = 15
 
 COUNTRIES = {
-    "AT": "Österreich",
-    "BE": "Belgien",
-    "BG": "Bulgarien",
-    "CH": "Schweiz",
-    "CY": "Zypern",
-    "CZ": "Tschechien",
-    "DE": "Deutschland",
-    "DK": "Dänemark",
-    "EE": "Estland",
-    "ES": "Spanien",
-    "FI": "Finnland",
-    "FR": "Frankreich",
-    "GR": "Griechenland",
-    "HR": "Kroatien",
-    "HU": "Ungarn",
-    "IE": "Irland",
-    "IS": "Island",
-    "IT": "Italien",
-    "LT": "Litauen",
-    "LU": "Luxemburg",
-    "LV": "Lettland",
-    "ME": "Montenegro",
-    "MK": "Nordmazedonien",
-    "MT": "Malta",
-    "NL": "Niederlande",
-    "NO": "Norwegen",
-    "PL": "Polen",
-    "PT": "Portugal",
-    "RO": "Rumänien",
-    "RS": "Serbien",
-    "SE": "Schweden",
-    "SI": "Slowenien",
-    "SK": "Slowakei",
-    "UK": "Großbritannien",
+    "at": "Österreich",
+    "be": "Belgien",
+    "bg": "Bulgarien",
+    "ch": "Schweiz",
+    "cy": "Zypern",
+    "cz": "Tschechien",
+    "de": "Deutschland",
+    "dk": "Dänemark",
+    "ee": "Estland",
+    "es": "Spanien",
+    "fi": "Finnland",
+    "fr": "Frankreich",
+    "gr": "Griechenland",
+    "hr": "Kroatien",
+    "hu": "Ungarn",
+    "ie": "Irland",
+    "is": "Island",
+    "it": "Italien",
+    "lt": "Litauen",
+    "lu": "Luxemburg",
+    "lv": "Lettland",
+    "me": "Montenegro",
+    "mk": "Nordmazedonien",
+    "mt": "Malta",
+    "nl": "Niederlande",
+    "no": "Norwegen",
+    "pl": "Polen",
+    "pt": "Portugal",
+    "ro": "Rumänien",
+    "rs": "Serbien",
+    "se": "Schweden",
+    "si": "Slowenien",
+    "sk": "Slowakei",
+    "uk": "Großbritannien",
 }
 
 SEVERITY_ORDER = {
-    "Minor": 1,
-    "Moderate": 2,
-    "Severe": 3,
-    "Extreme": 4,
+    "Keine": 0,
+    "Yellow": 1,
+    "Orange": 2,
+    "Red": 3,
+}
+
+SEVERITY_LABELS = {
+    "Yellow": "Moderate",
+    "Orange": "Severe",
+    "Red": "Extreme",
+    "Keine": "Keine",
 }
