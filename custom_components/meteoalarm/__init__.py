@@ -48,7 +48,7 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
         url = BASE_URL.format(lon=lon, lat=lat)
         headers = {
             "Accept": "application/geo+json",
-            "apikey": self.api_key,
+            "Authorization": f"Bearer {self.api_key}",  # Laut OpenAPI als Bearer Token
         }
 
         try:

@@ -6,14 +6,13 @@ from .const import CONF_API_KEY, DOMAIN
 
 
 class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Geo Weather Alarms."""
+
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        errors = {}
-
+        """Handle the initial step."""
         if user_input is not None:
-            country_code = user_input[CONF_COUNTRY]
-            # Unique ID = Domain + Ländercode → verhindert Duplikate
             await self.async_set_unique_id(DOMAIN)
             self._abort_if_unique_id_configured()
 
@@ -22,16 +21,13 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data=user_input,
             )
 
-        schema = vol.Schema(
-            {
-                vol.Optional(CONF_API_KEY, default=""): str,
-            }
-        )
-
         return self.async_show_form(
             step_id="user",
-            data_schema=schema,
-            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_API_KEY): str,
+                }
+            ),
         )
 
     @staticmethod
@@ -43,20 +39,25 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
     """Ermöglicht nachträgliches Ändern des API-Keys."""
 
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        # Wir speichern den config_entry in einer privaten Variable,
+        # um den AttributeError (no setter) zu vermeiden.
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
+        """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_API_KEY,
-                    default=self.config_entry.options.get(CONF_API_KEY, ""),
-                ): str,
-            }
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_API_KEY,
+                        default=self._config_entry.data.get(CONF_API_KEY, ""),
+                    ): str,
+                }
+            ),
         )
-
-        return self.async_show_form(step_id="init", data_schema=schema)
