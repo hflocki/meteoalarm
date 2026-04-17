@@ -52,8 +52,7 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
 
         # 1. URL zusammenbauen und den Token direkt anhängen (tokenQuery Methode)
         # Wir nutzen &token=, da in der BASE_URL bereits ein ?f=json steht
-        base_filled = BASE_URL.format(country=self.country)
-        url = f"{base_filled}&token={self.api_key}"
+        url = f"{BASE_URL.format(country=self.country)}?f=GeoJSON&token={self.api_key}"
         
         # DEBUG: Hilft dir im Log zu sehen, was genau aufgerufen wird
         _LOGGER.debug("MeteoAlarm Abruf: %s (Key beginnt mit %s)", url.split("&token=")[0], self.api_key[:5])
