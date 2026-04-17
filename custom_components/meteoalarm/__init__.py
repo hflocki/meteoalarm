@@ -46,22 +46,36 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self):
-        # Die URL nutzt jetzt den Platzhalter {country} aus der const.py
-        url = BASE_URL.format(country=self.country)
+        """Daten von der API abrufen."""
+        lat = self.hass.config.latitude
+        lon = self.hass.config.longitude
+
+        # 1. URL zusammenbauen und den Token direkt anhängen (tokenQuery Methode)
+        # Wir nutzen &token=, da in der BASE_URL bereits ein ?f=json steht
+        base_filled = BASE_URL.format(country=self.country)
+        url = f"{base_filled}&token={self.api_key}"
         
-        # Laut OpenAPI yaml ist Bearer Auth der Standard
+        # DEBUG: Hilft dir im Log zu sehen, was genau aufgerufen wird
+        _LOGGER.debug("MeteoAlarm Abruf: %s (Key beginnt mit %s)", url.split("&token=")[0], self.api_key[:5])
+
+        # 2. Header ohne Authorization (da der Key nun in der URL steckt)
         headers = {
             "Accept": "application/geo+json",
-            "Authorization": f"Bearer {self.api_key}"
         }
 
         try:
+            from homeassistant.helpers.aiohttp_client import async_get_clientsession
             session = async_get_clientsession(self.hass)
+            
             async with session.get(url, headers=headers, timeout=30) as resp:
                 if resp.status == 401:
+                    # Logge die Antwort des Servers bei Fehlern
+                    error_text = await resp.text()
+                    _LOGGER.error("Auth Fehler (401): %s", error_text)
                     raise UpdateFailed("Invalid API Key")
                 if resp.status != 200:
                     raise UpdateFailed(f"API Error: {resp.status}")
+                
                 data = await resp.json(content_type=None)
         except Exception as err:
             raise UpdateFailed(f"Connection Error: {err}")
@@ -71,16 +85,21 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
 
         for feature in features:
             props = feature.get("properties", {})
-            matched.append(
-                {
-                    "headline": props.get("headline"),
-                    "event": props.get("event"),
-                    "severity": props.get("severity"),
-                    "onset": props.get("onset"),
-                    "expires": props.get("expires"),
-                    "description": props.get("description"),
-                    "instruction": props.get("instruction"),
-                }
-            )
+            
+            # HIER kannst du später noch deine GPS-Filter Logik einbauen
+            # (Prüfung ob lat/lon innerhalb der Geometrie des Features liegen)
+            
+            matched.append({
+                "headline": props.get("headline"),
+                "event": props.get("event"),
+                "severity": props.get("severity"),
+                "onset": props.get("onset"),
+                "expires": props.get("expires"),
+                "description": props.get("description"),
+                "instruction": props.get("instruction"),
+            })
 
-        return {"warnungen": matched, "location": f"{lat}, {lon}"}
+        return {
+            "warnungen": matched, 
+            "location": f"{lat}, {lon}"
+        }
