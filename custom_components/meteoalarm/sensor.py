@@ -1,40 +1,35 @@
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from .const import DOMAIN
 
-from .const import COUNTRIES, DOMAIN, SEVERITY_ORDER
-
-
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Setzt den Sensor basierend auf dem Config Entry auf."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([MeteoAlarmSensor(coordinator, entry)])
 
-    # Wir brauchen kein 'country' mehr aus den entry.data
-    async_add_entities(
-        [
-            MeteoAlarmLevelSensor(coordinator, entry),
-            MeteoAlarmDetailSensor(coordinator, entry),
-        ]
-    )
+class MeteoAlarmSensor(CoordinatorEntity, SensorEntity):
+    """Haupt-Sensor für MeteoAlarm Warnungen."""
 
-
-class MeteoAlarmBaseSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, entry):
         super().__init__(coordinator)
         self._entry = entry
+        self._attr_name = f"MeteoAlarm {entry.title}"
+        self._attr_unique_id = f"{entry.entry_id}_warnings"
+        self._attr_icon = "mdi:alert-decagram"
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._entry.entry_id)},
-            "name": "Geo Weather Alarms",
-            "manufacturer": "EUMETNET",
-            "model": "MeteoAlarm EDR API",
-        }
+    def state(self):
+        """Gibt die Anzahl der aktuellen Warnungen zurück."""
+        return self.coordinator.data.get("count", 0)
 
+    @property
+    def extra_state_attributes(self):
+        """Schreibt die Details der Warnungen in die Attribute."""
+        return {
+            "warnungen": self.coordinator.data.get("warnungen", []),
+            "standort": self.coordinator.data.get("location"),
+            "letztes_update": self.coordinator.last_update_success_time
+        }
 
 class MeteoAlarmCountSensor(MeteoAlarmBaseSensor):
     _attr_icon = "mdi:weather-lightning"
