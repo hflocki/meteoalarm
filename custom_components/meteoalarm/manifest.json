@@ -1,9 +1,9 @@
 {
   "domain": "meteoalarm",
   "name": "MeteoAlarm Wetterwarnungen",
-  "documentation": "https://www.meteoalarm.org",
+  "documentation": "https://github.com/hflocki/meteoalarm",
   "requirements": [],
-  "codeowners": ["@dein_name"],
-  "version": "1.0.0",
+  "codeowners": ["@hflocki"],
+  "version": "1.0.1",
   "iot_class": "cloud_polling"
 }
