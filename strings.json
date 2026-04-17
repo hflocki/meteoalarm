@@ -2,26 +2,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "MeteoAlarm Wetterwarnung einrichten",
-        "description": "Wähle ein Land aus. Der API-Key ist optional (kostenlos über devportal.meteogate.eu).",
+        "title": "Geo Weather Alarms Setup",
+        "description": "To use this integration, you need a free API key from the European Weather Data Portal.\n\n1. Go to [devportal.meteogate.eu](https://devportal.meteogate.eu/)\n2. Register an account and create a new Application.\n3. Copy your **API Key** and paste it below.\n\nYour location will be determined automatically based on your Home Assistant settings.",
         "data": {
-          "country": "Land",
-          "api_key": "MeteoGate API-Key (optional)"
+          "api_key": "MeteoGate API Key"
         }
       }
     },
     "abort": {
-      "already_configured": "Dieses Land ist bereits eingerichtet."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "MeteoAlarm Optionen",
-        "data": {
-          "api_key": "MeteoGate API-Key"
-        }
-      }
+      "already_configured": "Geo Weather Alarms is already configured."
     }
   }
 }

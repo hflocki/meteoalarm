@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import BASE_URL, CONF_API_KEY, CONF_COUNTRY, DOMAIN, SCAN_INTERVAL_MINUTES
+from .const import BASE_URL, CONF_API_KEY, DOMAIN, SCAN_INTERVAL_MINUTES
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
@@ -37,51 +37,53 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 class MeteoAlarmCoordinator(DataUpdateCoordinator):
-    """Holt Warnungen für ein Land und filtert per GPS."""
+    """Holt Warnungen basierend auf den HA-System-Koordinaten."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-        self.country = entry.data[
-            CONF_API_KEY if CONF_API_KEY in entry.data else CONF_COUNTRY
-        ]
-        self.country = entry.data[CONF_COUNTRY]
-        self.api_key = entry.data.get(CONF_API_KEY) or entry.options.get(
-            CONF_API_KEY, ""
-        )
+        # Wir holen nur den API-Key. Das Land brauchen wir nicht mehr im Init.
+        self.api_key = entry.data.get(CONF_API_KEY)
         self.entry = entry
 
         super().__init__(
             hass,
             _LOGGER,
-            name=f"MeteoAlarm {self.country}",
+            name="Geo Weather Alarms",
             update_interval=timedelta(minutes=SCAN_INTERVAL_MINUTES),
         )
 
     async def _async_update_data(self):
+        # HA-interne GPS-Koordinaten abgreifen
         lat = self.hass.config.latitude
         lon = self.hass.config.longitude
 
-        # Der API-Key muss als 'apikey' im Header gesendet werden
+        # URL aus der const.py nutzen und Koordinaten einsetzen
         url = BASE_URL.format(lon=lon, lat=lat)
         headers = {
             "Accept": "application/geo+json",
-            "apikey": self.api_key,  # MeteoGate nutzt 'apikey'
+            "apikey": self.api_key,
         }
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)
-                ) as resp:
-                    if resp.status != 200:
-                        raise UpdateFailed(f"API Error: {resp.status}")
-                    data = await resp.json(content_type=None)
+            # Nutze die von HA empfohlene aiohttp_client Helper-Methode (optional, aber sauberer)
+            from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+            session = async_get_clientsession(self.hass)
+
+            async with session.get(
+                url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)
+            ) as resp:
+                if resp.status == 401:
+                    raise UpdateFailed("Invalid API Key")
+                if resp.status != 200:
+                    raise UpdateFailed(f"API Error: {resp.status}")
+
+                data = await resp.json(content_type=None)
         except Exception as err:
             raise UpdateFailed(f"Connection Error: {err}")
 
         features = data.get("features", [])
         matched = []
 
-        # Da die API bereits nach GPS gefiltert hat, übernehmen wir einfach alle Ergebnisse
         for feature in features:
             props = feature.get("properties", {})
             matched.append(
@@ -92,11 +94,12 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
                     "von": props.get("onset"),
                     "bis": props.get("expires"),
                     "beschreibung": props.get("description"),
-                    "instruction": props.get("instruction"),  # Wichtig für Enduser
+                    "instruction": props.get("instruction"),
                 }
             )
 
         return {
             "warnungen": matched,
-            "land": self.country,
+            # Wir geben die Koordinaten zurück, damit man sie im Sensor sieht
+            "location": f"{lat}, {lon}",
         }
