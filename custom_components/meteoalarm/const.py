@@ -5,9 +5,8 @@ CONF_COUNTRY = "country"
 SCAN_INTERVAL_MINUTES = 10
 
 # Pfad laut OpenAPI-Dokumentation
-BASE_URL = (
-    "https://api.meteoalarm.org/edr/v1/collections/warnings/locations/{country}?f=json"
-)
+
+BASE_URL = "https://api.meteoalarm.org/edr/v1/collections/warnings/locations/{country}"
 
 COUNTRIES = {
     "AT": "Österreich",
