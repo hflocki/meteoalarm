@@ -33,24 +33,26 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 class MeteoAlarmCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-        self.api_key = entry.data.get(CONF_API_KEY)
+        # Hier holen wir das Land und den Key aus den Config-Einträgen
+        self.country = entry.data[CONF_COUNTRY]
+        self.api_key = entry.data[CONF_API_KEY]
+        self.entry = entry
+
         super().__init__(
             hass,
             _LOGGER,
-            name="Geo Weather Alarms",
+            name=f"MeteoAlarm {self.country}",
             update_interval=timedelta(minutes=SCAN_INTERVAL_MINUTES),
         )
 
     async def _async_update_data(self):
-        lat = self.hass.config.latitude
-        lon = self.hass.config.longitude
-
-        # URL nutzt das gewählte Land
+        # Die URL nutzt jetzt den Platzhalter {country} aus der const.py
         url = BASE_URL.format(country=self.country)
-
+        
+        # Laut OpenAPI yaml ist Bearer Auth der Standard
         headers = {
             "Accept": "application/geo+json",
-            "Authorization": f"Bearer {self.api_key}",  # Laut OpenAPI als Bearer Token
+            "Authorization": f"Bearer {self.api_key}"
         }
 
         try:
