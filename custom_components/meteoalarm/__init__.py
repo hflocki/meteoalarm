@@ -46,38 +46,38 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self):
-        """Daten von der API abrufen."""
+        # Koordinaten aus HA für die spätere Filterung
         lat = self.hass.config.latitude
         lon = self.hass.config.longitude
 
-        # 1. URL zusammenbauen und den Token direkt anhängen (tokenQuery Methode)
-        # Wir nutzen &token=, da in der BASE_URL bereits ein ?f=json steht
-        url = f"{BASE_URL.format(country=self.country)}?f=GeoJSON&token={self.api_key}"
-        
-        # DEBUG: Hilft dir im Log zu sehen, was genau aufgerufen wird
-        _LOGGER.debug("MeteoAlarm Abruf: %s (Key beginnt mit %s)", url.split("&token=")[0], self.api_key[:5])
-
-        # 2. Header ohne Authorization (da der Key nun in der URL steckt)
-        headers = {
-            "Accept": "application/geo+json",
+        # Parameter für MeteoGate zusammenbauen
+        params = {
+            "f": "json",      # Wir wollen JSON-Format
+            "token": self.api_key
         }
+
+        # URL mit dem gewählten Land (z.B. DE)
+        url = BASE_URL.format(country=self.country)
 
         try:
             from homeassistant.helpers.aiohttp_client import async_get_clientsession
             session = async_get_clientsession(self.hass)
             
-            async with session.get(url, headers=headers, timeout=30) as resp:
+            # Request an MeteoGate senden
+            async with session.get(url, params=params, timeout=30) as resp:
                 if resp.status == 401:
-                    # Logge die Antwort des Servers bei Fehlern
-                    error_text = await resp.text()
-                    _LOGGER.error("Auth Fehler (401): %s", error_text)
+                    _LOGGER.error("MeteoGate 401: Key wird abgelehnt. Prüfe deinen Token im MeteoGate Portal.")
                     raise UpdateFailed("Invalid API Key")
-                if resp.status != 200:
-                    raise UpdateFailed(f"API Error: {resp.status}")
                 
-                data = await resp.json(content_type=None)
+                if resp.status != 200:
+                    _LOGGER.error("MeteoGate Fehler %s: %s", resp.status, await resp.text())
+                    raise UpdateFailed(f"MeteoGate API Error: {resp.status}")
+                
+                data = await resp.json()
         except Exception as err:
-            raise UpdateFailed(f"Connection Error: {err}")
+            raise UpdateFailed(f"Verbindung zu MeteoGate fehlgeschlagen: {err}")
+
+        # ... (deine Logik zur Verarbeitung der Features)
 
         features = data.get("features", [])
         matched = []
