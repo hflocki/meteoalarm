@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import BASE_URL, CONF_API_KEY, DOMAIN, SCAN_INTERVAL_MINUTES
+from .const import BASE_URL, CONF_API_KEY, CONF_COUNTRY, DOMAIN, SCAN_INTERVAL_MINUTES
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
