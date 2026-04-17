@@ -1,80 +1,36 @@
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .const import DOMAIN
+from .const import DOMAIN, SEVERITY_ORDER
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Setzt den Sensor basierend auf dem Config Entry auf."""
+    """Setzt die Sensoren basierend auf dem Config Entry auf."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([MeteoAlarmSensor(coordinator, entry)])
+    
+    # Wir fügen beide Sensoren hinzu
+    async_add_entities([
+        MeteoAlarmLevelSensor(coordinator, entry),
+        MeteoAlarmDetailSensor(coordinator, entry)
+    ])
 
-class MeteoAlarmSensor(CoordinatorEntity, SensorEntity):
-    """Haupt-Sensor für MeteoAlarm Warnungen."""
+class MeteoAlarmLevelSensor(CoordinatorEntity, SensorEntity):
+    """Sensor für die höchste Warnstufe im gewählten Land."""
 
     def __init__(self, coordinator, entry):
         super().__init__(coordinator)
         self._entry = entry
-        self._attr_name = f"MeteoAlarm {entry.title}"
-        self._attr_unique_id = f"{entry.entry_id}_warnings"
-        self._attr_icon = "mdi:alert-decagram"
-
-    @property
-    def state(self):
-        """Gibt die Anzahl der aktuellen Warnungen zurück."""
-        return self.coordinator.data.get("count", 0)
-
-    @property
-    def extra_state_attributes(self):
-        """Schreibt die Details der Warnungen in die Attribute."""
-        return {
-            "warnungen": self.coordinator.data.get("warnungen", []),
-            "standort": self.coordinator.data.get("location"),
-            "letztes_update": self.coordinator.last_update_success_time
-        }
-
-class MeteoAlarmCountSensor(MeteoAlarmBaseSensor):
-    _attr_icon = "mdi:weather-lightning"
-    _attr_native_unit_of_measurement = "Warnungen"
-
-    @property
-    def unique_id(self):
-        return f"meteoalarm_{self._country}_count"
-
-    @property
-    def name(self):
-        return f"MeteoAlarm {self._country_name} Aktive Warnungen"
+        self._attr_unique_id = f"{entry.entry_id}_highest_level"
+        self._attr_name = f"MeteoAlarm {entry.title} Höchste Stufe"
 
     @property
     def native_value(self):
-        if self.coordinator.data:
-            return len(self.coordinator.data.get("warnungen", []))
-        return 0
-
-    @property
-    def icon(self):
-        val = self.native_value
-        if val and val > 0:
-            return "mdi:weather-lightning"
-        return "mdi:shield-check"
-
-
-class MeteoAlarmLevelSensor(MeteoAlarmBaseSensor):
-    @property
-    def unique_id(self):
-        return f"meteoalarm_{self._country}_level"
-
-    @property
-    def name(self):
-        return f"MeteoAlarm {self._country_name} Höchste Stufe"
-
-    @property
-    def native_value(self):
-        if not self.coordinator.data:
-            return "Keine"
+        """Gibt die höchste aktuelle Warnstufe zurück."""
         warnungen = self.coordinator.data.get("warnungen", [])
         if not warnungen:
             return "Keine"
+        
+        # Findet die Warnung mit der höchsten Stufe basierend auf SEVERITY_ORDER
         return max(
-            (w.get("stufe", "Minor") for w in warnungen),
+            (w.get("severity", "Minor") for w in warnungen),
             key=lambda s: SEVERITY_ORDER.get(s, 0),
             default="Keine",
         )
@@ -90,40 +46,30 @@ class MeteoAlarmLevelSensor(MeteoAlarmBaseSensor):
         }
         return icons.get(lvl, "mdi:shield-check")
 
-    @property
-    def extra_state_attributes(self):
-        if not self.coordinator.data:
-            return {}
-        return {"land": self.coordinator.data.get("land", self._country)}
+class MeteoAlarmDetailSensor(CoordinatorEntity, SensorEntity):
+    """Sensor für die detaillierten Warnungstexte."""
 
-
-class MeteoAlarmDetailSensor(MeteoAlarmBaseSensor):
-    _attr_icon = "mdi:format-list-bulleted"
-
-    @property
-    def unique_id(self):
-        return f"meteoalarm_{self._country}_details"
-
-    @property
-    def name(self):
-        return f"MeteoAlarm {self._country_name} Details"
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_details"
+        self._attr_name = f"MeteoAlarm {entry.title} Details"
+        self._attr_icon = "mdi:format-list-bulleted"
 
     @property
     def native_value(self):
-        if not self.coordinator.data:
-            return "Keine Daten"
+        """Zeigt den Titel der ersten Warnung oder 'Keine Warnungen'."""
         warnungen = self.coordinator.data.get("warnungen", [])
         if not warnungen:
             return "Keine Warnungen"
-        return warnungen[0].get("titel", "Warnung aktiv")
+        return warnungen[0].get("headline", "Warnung aktiv")
 
     @property
     def extra_state_attributes(self):
-        if not self.coordinator.data:
-            return {}
+        """Schreibt alle Warnungen in die Attribute für Dashboards."""
         data = self.coordinator.data
         return {
-            "warnungen": data.get("warnungen", []),
-            "anzahl_gesamt_api": data.get("gesamt_api", 0),
-            "land": data.get("land", self._country),
+            "anzahl": data.get("count", 0),
+            "standort": data.get("location"),
+            "alle_warnungen": data.get("warnungen", []),
         }
