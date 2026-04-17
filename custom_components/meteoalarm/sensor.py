@@ -11,29 +11,26 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    country = entry.data["country"]
 
+    # Wir brauchen kein 'country' mehr aus den entry.data
     async_add_entities(
         [
-            MeteoAlarmCountSensor(coordinator, entry, country),
-            MeteoAlarmLevelSensor(coordinator, entry, country),
-            MeteoAlarmDetailSensor(coordinator, entry, country),
+            MeteoAlarmLevelSensor(coordinator, entry),
+            MeteoAlarmDetailSensor(coordinator, entry),
         ]
     )
 
 
 class MeteoAlarmBaseSensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator, entry, country):
+    def __init__(self, coordinator, entry):
         super().__init__(coordinator)
-        self._country = country
-        self._country_name = COUNTRIES.get(country, country)
         self._entry = entry
 
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, self._country)},
-            "name": f"MeteoAlarm {self._country_name}",
+            "identifiers": {(DOMAIN, self._entry.entry_id)},
+            "name": "Geo Weather Alarms",
             "manufacturer": "EUMETNET",
             "model": "MeteoAlarm EDR API",
         }
