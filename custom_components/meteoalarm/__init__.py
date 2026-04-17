@@ -45,7 +45,9 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
         lat = self.hass.config.latitude
         lon = self.hass.config.longitude
 
-        url = BASE_URL.format(lon=lon, lat=lat)
+        # URL nutzt das gewählte Land
+        url = BASE_URL.format(country=self.country)
+
         headers = {
             "Accept": "application/geo+json",
             "Authorization": f"Bearer {self.api_key}",  # Laut OpenAPI als Bearer Token

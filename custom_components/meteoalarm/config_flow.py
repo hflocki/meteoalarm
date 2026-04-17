@@ -2,32 +2,36 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
-from .const import CONF_API_KEY, DOMAIN
+# Stelle sicher, dass CONF_COUNTRY und COUNTRIES hier importiert werden
+from .const import CONF_API_KEY, CONF_COUNTRY, COUNTRIES, DOMAIN
 
 
 class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Geo Weather Alarms."""
-
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """Handle the initial step."""
+        errors = {}
+
         if user_input is not None:
-            await self.async_set_unique_id(DOMAIN)
+            # Land-Code extrahieren für die Unique ID
+            c_code = user_input[CONF_COUNTRY]
+            await self.async_set_unique_id(f"{DOMAIN}_{c_code}")
             self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
-                title="Geo Weather Alarms",
-                data=user_input,
+                title=f"MeteoAlarm {c_code}", data=user_input
             )
 
+        # Das Schema zeigt die Länderliste und das API-Key Feld
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_COUNTRY, default="DE"): vol.In(COUNTRIES),
                     vol.Required(CONF_API_KEY): str,
                 }
             ),
+            errors=errors,
         )
 
     @staticmethod
@@ -41,12 +45,11 @@ class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        # Wir speichern den config_entry in einer privaten Variable,
-        # um den AttributeError (no setter) zu vermeiden.
+        # Nur eine Zuweisung mit Unterstrich, um Property-Fehler zu vermeiden
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
-        """Manage the options."""
+        """Optionen verwalten."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
