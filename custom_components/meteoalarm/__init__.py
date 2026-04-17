@@ -12,7 +12,6 @@ from .const import BASE_URL, CONF_API_KEY, CONF_COUNTRY, DOMAIN, SCAN_INTERVAL_M
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
 
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     coordinator = MeteoAlarmCoordinator(hass, entry)
@@ -23,17 +22,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
 
-
 class MeteoAlarmCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-        # Hier holen wir das Land und den Key aus den Config-Einträgen
         self.country = entry.data[CONF_COUNTRY]
         self.api_key = entry.data[CONF_API_KEY]
         self.entry = entry
@@ -46,38 +42,32 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self):
-        # Koordinaten aus HA für die spätere Filterung
         lat = self.hass.config.latitude
         lon = self.hass.config.longitude
 
-        # Parameter für MeteoGate zusammenbauen
         params = {
-            "f": "json",      # Wir wollen JSON-Format
+            "f": "json",
             "token": self.api_key
         }
 
-        # URL mit dem gewählten Land (z.B. DE)
         url = BASE_URL.format(country=self.country)
 
         try:
-            from homeassistant.helpers.aiohttp_client import async_get_clientsession
             session = async_get_clientsession(self.hass)
             
-            # Request an MeteoGate senden
             async with session.get(url, params=params, timeout=30) as resp:
                 if resp.status == 401:
                     _LOGGER.error("MeteoGate 401: Key wird abgelehnt. Prüfe deinen Token im MeteoGate Portal.")
                     raise UpdateFailed("Invalid API Key")
                 
                 if resp.status != 200:
-                    _LOGGER.error("MeteoGate Fehler %s: %s", resp.status, await resp.text())
+                    text = await resp.text()
+                    _LOGGER.error("MeteoGate Fehler %s: %s", resp.status, text)
                     raise UpdateFailed(f"MeteoGate API Error: {resp.status}")
                 
                 data = await resp.json()
         except Exception as err:
             raise UpdateFailed(f"Verbindung zu MeteoGate fehlgeschlagen: {err}")
-
-        # ... (deine Logik zur Verarbeitung der Features)
 
         features = data.get("features", [])
         matched = []
@@ -85,9 +75,7 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
         for feature in features:
             props = feature.get("properties", {})
             
-            # HIER kannst du später noch deine GPS-Filter Logik einbauen
-            # (Prüfung ob lat/lon innerhalb der Geometrie des Features liegen)
-            
+            # Hier ist der Platz für deine zukünftige GPS-Filter Logik
             matched.append({
                 "headline": props.get("headline"),
                 "event": props.get("event"),
@@ -99,6 +87,7 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
             })
 
         return {
-            "warnungen": matched, 
+            "warnungen": matched,
+            "count": len(matched), # Hilfreich für den Sensor-Status
             "location": f"{lat}, {lon}"
         }
