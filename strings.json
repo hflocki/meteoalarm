@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "MeteoAlarm Wetterwarnung einrichten",
+        "description": "Wähle ein Land aus. Der API-Key ist optional (kostenlos über devportal.meteogate.eu).",
+        "data": {
+          "country": "Land",
+          "api_key": "MeteoGate API-Key (optional)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Dieses Land ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "MeteoAlarm Optionen",
+        "data": {
+          "api_key": "MeteoGate API-Key"
+        }
+      }
+    }
+  }
+}
