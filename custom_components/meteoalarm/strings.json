@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Geo Weather Alarms Setup",
+        "description": "To use this integration, you need a free API key from the European Weather Data Portal.\n\n1. Go to [devportal.meteogate.eu](https://devportal.meteogate.eu/)\n2. Register an account and create a new Application.\n3. Copy your **API Key** and paste it below.\n\nYour location will be determined automatically based on your Home Assistant settings.",
+        "data": {
+          "api_key": "MeteoGate API Key"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Geo Weather Alarms is already configured."
+    }
+  }
+}
