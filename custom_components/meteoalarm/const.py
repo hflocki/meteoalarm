@@ -51,3 +51,13 @@ SEVERITY_LABELS = {
     "Red": "Extreme",
     "Keine": "Keine",
 }
+
+# Konfigurations-Keys
+CONF_MODE = "mode"
+MODE_MANUAL = "manual"
+MODE_GEOLOCATOR = "geolocator"
+CONF_COUNTRIES = "countries"
+CONF_GEOLOCATOR_ENTITY = "geolocator_entity"
+
+# Standard-Entity des GeoLocator-Sensors
+DEFAULT_GEOLOCATOR_ENTITY = "sensor.geolocator_country_code"

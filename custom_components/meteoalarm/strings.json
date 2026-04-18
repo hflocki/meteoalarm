@@ -2,15 +2,47 @@
   "config": {
     "step": {
       "user": {
-        "title": "MeteoAlarm Wetterwarnungen",
-        "description": "Wähle die Länder aus, für die du Wetterwarnungen erhalten möchtest. Es werden jeweils ein Sensor für die Warnstufe und einer für die Details erstellt.",
-        "data": {
-          "countries": "Länder auswählen"
-        }
+        "title": "MeteoAlarm – Modus wählen",
+        "description": "Wie sollen die zu überwachenden Länder bestimmt werden?",
+        "data": { "mode": "Modus" }
+      },
+      "manual": {
+        "title": "MeteoAlarm – Länder auswählen",
+        "description": "Pro Land entstehen zwei Sensoren:\n• `sensor.meteoalarm_XX_level` – Warnstufe\n• `sensor.meteoalarm_XX_details` – Warnungsliste\n\nZusätzlich immer: `sensor.meteoalarm_combined`",
+        "data": { "countries": "Länder" }
+      },
+      "geolocator": {
+        "title": "MeteoAlarm – GeoLocator-Sensor",
+        "description": "Wähle den GeoLocator-Sensor aus, der den 2-stelligen ISO-Ländercode liefert (z.B. `sensor.geolocator_country_code`).\n\nBei Länderwechsel aktualisiert MeteoAlarm die Sensoren automatisch.",
+        "data": { "geolocator_entity": "GeoLocator-Sensor (Ländercode)" }
       }
     },
+    "error": {
+      "no_countries": "Bitte mindestens ein Land auswählen.",
+      "entity_not_found": "Sensor nicht gefunden. Ist GeoLocator installiert und aktiv?"
+    },
     "abort": {
-      "already_configured": "MeteoAlarm ist bereits konfiguriert."
+      "already_configured": "MeteoAlarm ist bereits eingerichtet. Nutze die Optionen zum Ändern."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "MeteoAlarm – Modus ändern",
+        "data": { "mode": "Modus" }
+      },
+      "manual": {
+        "title": "MeteoAlarm – Länder bearbeiten",
+        "data": { "countries": "Länder" }
+      },
+      "geolocator": {
+        "title": "MeteoAlarm – GeoLocator-Sensor ändern",
+        "data": { "geolocator_entity": "GeoLocator-Sensor (Ländercode)" }
+      }
+    },
+    "error": {
+      "no_countries": "Bitte mindestens ein Land auswählen.",
+      "entity_not_found": "Sensor nicht gefunden."
     }
   }
 }
