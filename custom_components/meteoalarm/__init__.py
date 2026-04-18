@@ -19,6 +19,7 @@ from .const import (
     DOMAIN,
     FILTER_EXPIRED,
     MODE_GEOLOCATOR,
+    NAME_TO_CODE,
     SCAN_INTERVAL_MINUTES,
     SEVERITY_ORDER,
 )
@@ -43,18 +44,13 @@ def _parse_expires(expires_str: str) -> datetime | None:
     if not expires_str:
         return None
     try:
-        # Python 3.11+: fromisoformat kann +00:00 direkt
-        # Für ältere HA-Versionen: Z durch +00:00 ersetzen
         return datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
     except ValueError:
         return None
 
 
 def _parse_atom(root) -> dict:
-    """Parst einen Atom/CAP-Feed (feeds.meteoalarm.org).
-
-    Abgelaufene Warnungen werden gefiltert wenn FILTER_EXPIRED=True (aus const.py).
-    """
+    """Parst einen Atom/CAP-Feed (feeds.meteoalarm.org)."""
     items = []
     highest_severity = "Keine"
     now = datetime.now(tz=timezone.utc)
@@ -69,7 +65,6 @@ def _parse_atom(root) -> dict:
         cap_area = entry.findtext(_c("areaDesc"), "")
         cap_urgency = entry.findtext(_c("urgency"), "")
 
-        # Abgelaufene Warnungen überspringen
         if FILTER_EXPIRED:
             expires_dt = _parse_expires(cap_expires)
             if expires_dt is not None and expires_dt < now:
@@ -107,11 +102,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if mode == MODE_GEOLOCATOR:
         entity_id = cfg.get(CONF_GEOLOCATOR_ENTITY, DEFAULT_GEOLOCATOR_ENTITY)
         state = hass.states.get(entity_id)
-        country_code = (
-            state.state.lower()
-            if state and state.state not in ("unknown", "unavailable", "")
-            else None
-        )
+        country_code = None
+
+        if state and state.state not in ("unknown", "unavailable", ""):
+            val = state.state.lower().strip()
+            # Mapping: Erst schauen ob ISO-Code, dann ob voller Name in NAME_TO_CODE
+            if val in COUNTRIES:
+                country_code = val
+            elif val in NAME_TO_CODE:
+                country_code = NAME_TO_CODE[val]
+
         selected_countries = (
             [country_code] if country_code and country_code in COUNTRIES else []
         )
@@ -143,9 +143,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             new_state = event.data.get("new_state")
             if not new_state or new_state.state in ("unknown", "unavailable", ""):
                 return
-            new_country = new_state.state.lower()
+
+            val = new_state.state.lower().strip()
+            # Auch hier das Mapping anwenden
+            new_country = val
+            if val not in COUNTRIES and val in NAME_TO_CODE:
+                new_country = NAME_TO_CODE[val]
+
             current = list(hass.data[DOMAIN][entry.entry_id]["coordinators"].keys())
-            if new_country not in current:
+            if new_country in COUNTRIES and new_country not in current:
                 _LOGGER.info("GeoLocator: Länderwechsel nach %s", new_country.upper())
                 hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
 
@@ -193,7 +199,6 @@ class MeteoAlarmCoordinator(DataUpdateCoordinator):
 
             root = ET.fromstring(text)
 
-            # Sicherheitscheck: ist es wirklich ein Atom-Feed?
             if _NS_ATOM not in root.tag:
                 raise UpdateFailed(
                     f"Unerwartetes Feed-Format für {self.country_code.upper()} "

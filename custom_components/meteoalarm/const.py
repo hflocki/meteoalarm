@@ -44,6 +44,10 @@ COUNTRIES_DATA = {
     "uk": ("Großbritannien", "united-kingdom"),
 }
 
+# Mapping für die automatische Erkennung (Name -> Code)
+# Dies ermöglicht es, "Deutschland" oder "DE" zu "de" aufzulösen
+NAME_TO_CODE = {v[0].lower(): k for k, v in COUNTRIES_DATA.items()}
+
 # Abgeleitete Dicts für Rückwärtskompatibilität
 COUNTRIES = {k: v[0] for k, v in COUNTRIES_DATA.items()}
 COUNTRY_FEED_SLUG = {k: v[1] for k, v in COUNTRIES_DATA.items()}
@@ -77,7 +81,7 @@ MODE_MANUAL = "manual"
 MODE_GEOLOCATOR = "geolocator"
 CONF_COUNTRIES = "countries"
 CONF_GEOLOCATOR_ENTITY = "geolocator_entity"
-DEFAULT_GEOLOCATOR_ENTITY = "sensor.geolocator_country_code"
+DEFAULT_GEOLOCATOR_ENTITY = "sensor.geolocator_country"
 
 # Abgelaufene Warnungen (expires in der Vergangenheit) herausfiltern
 # True = nur aktive Warnungen anzeigen (empfohlen)

@@ -1,38 +1,49 @@
-# 🚐 MeteoAlarm RSS for Campers (Home Assistant)
+# 🚐 MeteoAlarm for Campers (Home Assistant)
 
-Stay safe on the road! This Home Assistant integration brings official **MeteoAlarm.org** weather warnings directly into your dashboard. Designed specifically for campers and travelers moving across Europe, it helps you monitor weather hazards for multiple countries without the need for complex API keys.
+Stay safe on your European road trips! This integration brings official **MeteoAlarm.org** weather warnings directly into your Home Assistant dashboard. It is specially designed for campers and travelers who cross borders and need automatic weather updates based on their current location.
 
 ## ✨ Features
 
-- **RSS-Powered:** Uses public feeds from MeteoAlarm.org—no registration or API tokens required.
-- **HACS Compatible:** Easy to install and update as a Custom Repository.
-- **Multi-Country Setup:** Monitor several countries at once (e.g., Germany and Croatia) with dedicated sensors for each.
+- **RSS-Powered:** No API keys or developer accounts required. Works out of the box!
+- **HACS Ready:** Install easily as a custom repository.
+- **Smart Country Detection:** Supports both **ISO Codes** (e.g., `DE`, `HR`) and **Full Country Names** (e.g., `Deutschland`, `Croatia`).
 - **Camper-Centric Sensors:**
-  - `Level Sensor`: Shows the highest alert level (Yellow, Orange, Red).
-  - `Detail Sensor`: Full list of active warning headlines and descriptions.
-  - `Combined Sensor`: A master view aggregating all your monitored regions into one card.
+  - `Level Sensor`: Quick glance at the current alert level (Yellow, Orange, Red).
+  - `Detail Sensor`: Full list of active warnings, including descriptions and expiry times.
+  - `Combined Sensor`: One "Master Sensor" showing all warnings for all monitored regions.
+
+### ℹ️ Flexible Input Formats
+The integration handles various sensor formats automatically:
+- **ISO Codes:** `de`, `DE`, `hr`, `HR` are all accepted.
+- **Full Names:** `Deutschland`, `Österreich`, `Croatia`, etc., are mapped to their respective codes.
+
 
 ## 🚀 Installation via HACS
 
-Since this is a custom integration, you can add it to HACS in a few simple steps:
+1. Open **HACS** in Home Assistant.
+2. Click the three dots (top right) -> **Custom repositories**.
+3. Add: `https://github.com/hflocki/meteoalarm` (Category: **Integration**).
+4. Download and **Restart Home Assistant**.
 
-1. Open **HACS** in your Home Assistant sidebar.
-2. Click on the three dots in the top right corner and select **Custom repositories**.
-3. Paste the URL of this repository: `https://github.com/hflocki/meteoalarm`
-4. Select **Integration** as the Category and click **Add**.
-5. Find the "MeteoAlarm Wetterwarnungen" integration in HACS and click **Download**.
-6. **Restart Home Assistant.**
+## ⚙️ Setup & GeoLocator
 
-## ⚙️ Configuration
+When adding the integration (**Settings > Devices & Services**), you can choose between two modes:
 
-1. Go to **Settings > Devices & Services**.
-2. Click **Add Integration** and search for **MeteoAlarm**.
-3. Select your desired countries from the checklist (e.g., DE, HR, AT).
-4. The sensors will be created automatically using the format `sensor.meteoalarm_xx_level`.
+### 1. Manual Mode
+Select one or more fixed countries from a list. Best for stationary use or planning ahead.
+
+### 2. GeoLocator Mode (The Camper's Choice 🌍)
+The integration follows your camper! Select any sensor that provides your current location as a country.
+- **Flexible Input:** The sensor can provide the country as an **ISO Code** (e.g., `DE`, `AT`, `HR`) or as a **Full Name** (e.g., `Deutschland`, `Österreich`, `Kroatien`).
+- **Automatic Sync:** As soon as your sensor (e.g., from a GPS tracker or Phone) changes its state, the integration automatically reloads the correct weather feed for that country.
+
+> **Tip:** If you use the Google Maps integration or a similar device tracker, simply point the GeoLocator to the sensor that holds the country information.
 
 ## 📊 Dashboard Examples
 
-### Summary Overview
+Use a **Markdown Card** to display your warnings beautifully:
+
+### Warning Summary
 ```yaml
 type: markdown
 content: >
