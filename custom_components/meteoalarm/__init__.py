@@ -9,65 +9,102 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
-    CONF_COUNTRIES,
-    CONF_GEOLOCATOR_ENTITY,
-    CONF_MODE,
-    COUNTRIES,
-    DEFAULT_GEOLOCATOR_ENTITY,
-    DOMAIN,
-    MODE_GEOLOCATOR,
-    SCAN_INTERVAL_MINUTES,
-    SEVERITY_ORDER,
+    CONF_COUNTRIES, CONF_GEOLOCATOR_ENTITY, CONF_MODE, COUNTRIES,
+    COUNTRY_FEED_SLUG, DEFAULT_GEOLOCATOR_ENTITY, DOMAIN, MODE_GEOLOCATOR,
+    SCAN_INTERVAL_MINUTES, SEVERITY_ORDER, CAP_SEVERITY_MAP,
 )
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
 
+_NS_ATOM = "http://www.w3.org/2005/Atom"
+_NS_CAP  = "urn:oasis:names:tc:emergency:cap:1.2"
+
+def _a(tag):  return f"{{{_NS_ATOM}}}{tag}"
+def _c(tag):  return f"{{{_NS_CAP}}}{tag}"
+
+
+def _parse_atom(root) -> dict:
+    """Parst einen Atom/CAP-Feed (feeds.meteoalarm.org)."""
+    items = []
+    highest_severity = "Keine"
+
+    for entry in root.findall(_a("entry")):
+        title   = entry.findtext(_a("title"), "")
+        summary = entry.findtext(_a("summary"), "")
+        updated = entry.findtext(_a("updated"), "")
+
+        # CAP-Felder (mit Namespace)
+        cap_severity = entry.findtext(_c("severity"), "")
+        cap_event    = entry.findtext(_c("event"), "")
+        cap_expires  = entry.findtext(_c("expires"), "")
+        cap_area     = entry.findtext(_c("areaDesc"), "")
+        cap_urgency  = entry.findtext(_c("urgency"), "")
+
+        severity = CAP_SEVERITY_MAP.get(cap_severity, "Keine")
+
+        if SEVERITY_ORDER.get(severity, 0) > SEVERITY_ORDER.get(highest_severity, 0):
+            highest_severity = severity
+
+        items.append({
+            "headline":    title,
+            "description": summary,
+            "severity":    severity,
+            "pubDate":     updated,
+            "event":       cap_event,
+            "area":        cap_area,
+            "expires":     cap_expires,
+            "urgency":     cap_urgency,
+        })
+
+    return {"warnungen": items, "count": len(items), "highest_severity": highest_severity}
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
-
     cfg = entry.options or entry.data
     mode = cfg.get(CONF_MODE, "manual")
 
     if mode == MODE_GEOLOCATOR:
         entity_id = cfg.get(CONF_GEOLOCATOR_ENTITY, DEFAULT_GEOLOCATOR_ENTITY)
-        # Aktuelles Land aus dem Sensor lesen
         state = hass.states.get(entity_id)
-        country_code = (state.state.lower() if state and state.state not in ("unknown", "unavailable", "") else None)
+        country_code = (
+            state.state.lower()
+            if state and state.state not in ("unknown", "unavailable", "")
+            else None
+        )
         selected_countries = [country_code] if country_code and country_code in COUNTRIES else []
     else:
         selected_countries = cfg.get(CONF_COUNTRIES, [])
 
     coordinators = {}
     for country in selected_countries:
-        coord = MeteoAlarmRSSCoordinator(hass, country)
+        coord = MeteoAlarmCoordinator(hass, country)
         await coord.async_config_entry_first_refresh()
         coordinators[country] = coord
 
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinators": coordinators,
         "mode": mode,
-        "geolocator_entity": cfg.get(CONF_GEOLOCATOR_ENTITY, DEFAULT_GEOLOCATOR_ENTITY) if mode == MODE_GEOLOCATOR else None,
+        "geolocator_entity": cfg.get(CONF_GEOLOCATOR_ENTITY, DEFAULT_GEOLOCATOR_ENTITY)
+        if mode == MODE_GEOLOCATOR else None,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_update_options))
 
-    # Im GeoLocator-Modus: Sensor-Änderungen überwachen
     if mode == MODE_GEOLOCATOR:
         entity_id = cfg.get(CONF_GEOLOCATOR_ENTITY, DEFAULT_GEOLOCATOR_ENTITY)
 
         @callback
         def _on_geolocator_change(event):
-            """Wenn GeoLocator-Sensor ein neues Land meldet → Integration neu laden."""
             new_state = event.data.get("new_state")
             if not new_state or new_state.state in ("unknown", "unavailable", ""):
                 return
             new_country = new_state.state.lower()
-            current_countries = list(hass.data[DOMAIN][entry.entry_id]["coordinators"].keys())
-            if new_country not in current_countries:
-                _LOGGER.info("GeoLocator: Länderwechsel nach %s – lade MeteoAlarm neu", new_country.upper())
+            current = list(hass.data[DOMAIN][entry.entry_id]["coordinators"].keys())
+            if new_country not in current:
+                _LOGGER.info("GeoLocator: Länderwechsel nach %s", new_country.upper())
                 hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
 
         entry.async_on_unload(
@@ -88,59 +125,40 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-class MeteoAlarmRSSCoordinator(DataUpdateCoordinator):
+class MeteoAlarmCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, country):
         self.country_code = country.lower()
+        slug = COUNTRY_FEED_SLUG.get(self.country_code, self.country_code)
+        self.feed_url = f"https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-{slug}"
         super().__init__(
-            hass,
-            _LOGGER,
-            name=f"MeteoAlarm RSS {country.upper()}",
+            hass, _LOGGER,
+            name=f"MeteoAlarm {country.upper()}",
             update_interval=timedelta(minutes=SCAN_INTERVAL_MINUTES),
         )
 
-    async def _async_update_data(self):
-        url = f"https://www.meteoalarm.org/en/rss/{self.country_code}"
+    async def _async_update_data(self) -> dict:
         try:
             session = async_get_clientsession(self.hass)
-            async with session.get(url, timeout=15) as resp:
+            async with session.get(self.feed_url, timeout=15) as resp:
                 if resp.status != 200:
-                    raise UpdateFailed(f"RSS Feed nicht erreichbar: {resp.status}")
+                    raise UpdateFailed(f"Feed nicht erreichbar ({resp.status}): {self.feed_url}")
                 text = await resp.text()
 
             root = ET.fromstring(text)
-            items = []
-            highest_severity = "Keine"
 
-            for item in root.findall(".//item"):
-                title = item.find("title").text if item.find("title") is not None else ""
-                description = item.find("description").text if item.find("description") is not None else ""
-                pubdate = item.find("pubDate").text if item.find("pubDate") is not None else ""
+            # Sicherheitscheck: ist es wirklich ein Atom-Feed?
+            if _NS_ATOM not in root.tag:
+                raise UpdateFailed(
+                    f"Unerwartetes Feed-Format für {self.country_code.upper()} "
+                    f"(Root-Tag: {root.tag})"
+                )
 
-                severity = "Keine"
-                if "Red" in title:
-                    severity = "Red"
-                elif "Orange" in title:
-                    severity = "Orange"
-                elif "Yellow" in title:
-                    severity = "Yellow"
+            return _parse_atom(root)
 
-                if SEVERITY_ORDER.get(severity, 0) > SEVERITY_ORDER.get(highest_severity, 0):
-                    highest_severity = severity
-
-                items.append({
-                    "headline": title,
-                    "description": description,
-                    "severity": severity,
-                    "pubDate": pubdate,
-                    "country": self.country_code.upper(),
-                })
-
-            return {
-                "warnungen": items,
-                "count": len(items),
-                "highest_severity": highest_severity,
-            }
-
+        except ET.ParseError as err:
+            raise UpdateFailed(f"XML-Fehler: {err}") from err
+        except UpdateFailed:
+            raise
         except Exception as err:
-            _LOGGER.error("Parsing Fehler für %s: %s", self.country_code, err)
-            raise UpdateFailed(f"RSS Parsing Fehler: {err}")
+            _LOGGER.error("Fehler für %s: %s", self.country_code.upper(), err)
+            raise UpdateFailed(f"Unerwarteter Fehler: {err}") from err
