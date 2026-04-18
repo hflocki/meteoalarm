@@ -78,3 +78,8 @@ MODE_GEOLOCATOR = "geolocator"
 CONF_COUNTRIES = "countries"
 CONF_GEOLOCATOR_ENTITY = "geolocator_entity"
 DEFAULT_GEOLOCATOR_ENTITY = "sensor.geolocator_country_code"
+
+# Abgelaufene Warnungen (expires in der Vergangenheit) herausfiltern
+# True = nur aktive Warnungen anzeigen (empfohlen)
+# False = alle Warnungen wie vom Feed geliefert
+FILTER_EXPIRED = True
