@@ -39,8 +39,7 @@ def _c(tag):
     return f"{{{_NS_CAP}}}{tag}"
 
 
-def _parse_expires(expires_str: str) -> datetime | None:
-    """Parst einen ISO-8601-Zeitstempel aus dem CAP-Feed, gibt None bei Fehler."""
+def _parse_expires(expires_str: str):
     if not expires_str:
         return None
     try:
@@ -50,7 +49,6 @@ def _parse_expires(expires_str: str) -> datetime | None:
 
 
 def _parse_atom(root) -> dict:
-    """Parst einen Atom/CAP-Feed (feeds.meteoalarm.org)."""
     items = []
     highest_severity = "Keine"
     now = datetime.now(tz=timezone.utc)
@@ -94,34 +92,58 @@ def _parse_atom(root) -> dict:
     }
 
 
+def _resolve_country(state_value: str) -> str | None:
+    """Wandelt einen Sensor-State (ISO-Code oder Ländername) in einen ISO-Code um."""
+    val = state_value.lower().strip()
+    if val in COUNTRIES:
+        return val
+    if val in NAME_TO_CODE:
+        return NAME_TO_CODE[val]
+    return None
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     cfg = entry.options or entry.data
     mode = cfg.get(CONF_MODE, "manual")
 
+    selected_countries = []
+
     if mode == MODE_GEOLOCATOR:
         entity_id = cfg.get(CONF_GEOLOCATOR_ENTITY, DEFAULT_GEOLOCATOR_ENTITY)
         state = hass.states.get(entity_id)
-        country_code = None
 
         if state and state.state not in ("unknown", "unavailable", ""):
-            val = state.state.lower().strip()
-            # Mapping: Erst schauen ob ISO-Code, dann ob voller Name in NAME_TO_CODE
-            if val in COUNTRIES:
-                country_code = val
-            elif val in NAME_TO_CODE:
-                country_code = NAME_TO_CODE[val]
-
-        selected_countries = (
-            [country_code] if country_code and country_code in COUNTRIES else []
-        )
+            country_code = _resolve_country(state.state)
+            if country_code:
+                selected_countries = [country_code]
+            else:
+                _LOGGER.warning(
+                    "GeoLocator liefert unbekannten Wert '%s' – keine Sensoren angelegt",
+                    state.state,
+                )
+        else:
+            # BUG FIX: Sensor beim Start unavailable ist normal (HA startet durch).
+            # Kein Fehler werfen – der State-Change-Listener übernimmt sobald
+            # der Sensor verfügbar wird.
+            _LOGGER.info(
+                "GeoLocator-Sensor '%s' noch nicht verfügbar – warte auf ersten Update",
+                entity_id,
+            )
     else:
         selected_countries = cfg.get(CONF_COUNTRIES, [])
 
     coordinators = {}
     for country in selected_countries:
         coord = MeteoAlarmCoordinator(hass, country)
-        await coord.async_config_entry_first_refresh()
+        try:
+            await coord.async_config_entry_first_refresh()
+        except Exception as err:
+            # BUG FIX: first_refresh-Fehler nicht als Einrichtungsfehler melden –
+            # der Coordinator versucht es beim nächsten Intervall erneut.
+            _LOGGER.warning(
+                "Erster Abruf für %s fehlgeschlagen: %s", country.upper(), err
+            )
         coordinators[country] = coord
 
     hass.data[DOMAIN][entry.entry_id] = {
@@ -144,15 +166,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if not new_state or new_state.state in ("unknown", "unavailable", ""):
                 return
 
-            val = new_state.state.lower().strip()
-            # Auch hier das Mapping anwenden
-            new_country = val
-            if val not in COUNTRIES and val in NAME_TO_CODE:
-                new_country = NAME_TO_CODE[val]
+            new_country = _resolve_country(new_state.state)
+            if not new_country:
+                return
 
             current = list(hass.data[DOMAIN][entry.entry_id]["coordinators"].keys())
-            if new_country in COUNTRIES and new_country not in current:
-                _LOGGER.info("GeoLocator: Länderwechsel nach %s", new_country.upper())
+            if new_country not in current:
+                _LOGGER.info(
+                    "GeoLocator: Länderwechsel nach %s – lade neu", new_country.upper()
+                )
                 hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
 
         entry.async_on_unload(

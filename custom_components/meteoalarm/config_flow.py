@@ -59,7 +59,6 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._mode = None
 
     async def async_step_user(self, user_input=None):
-        """Erster Schritt: Modus-Auswahl."""
         if user_input is not None:
             self._mode = user_input[CONF_MODE]
             if self._mode == MODE_GEOLOCATOR:
@@ -74,7 +73,8 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_MODE, default=MODE_MANUAL
                     ): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=MODE_OPTIONS, mode=selector.SelectSelectorMode.LIST
+                            options=MODE_OPTIONS,
+                            mode=selector.SelectSelectorMode.LIST,
                         )
                     ),
                 }
@@ -82,7 +82,6 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_manual(self, user_input=None):
-        """Schritt für manuelle Länderwahl."""
         errors = {}
         if user_input is not None:
             if not user_input.get(CONF_COUNTRIES):
@@ -97,19 +96,23 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_geolocator(self, user_input=None):
-        """Schritt für GeoLocator-Sensor."""
         errors = {}
         if user_input is not None:
-            entity_id = user_input.get(CONF_GEOLOCATOR_ENTITY, "")
-            if not self.hass.states.get(entity_id):
+            entity_id = user_input.get(CONF_GEOLOCATOR_ENTITY, "").strip()
+            # BUG FIX: Nur prüfen ob entity_id nicht leer - EntitySelector
+            # stellt sicher dass die Entity in HA existiert. Kein State-Check
+            # nötig (Sensor kann beim Setup "unavailable" sein).
+            if not entity_id:
                 errors[CONF_GEOLOCATOR_ENTITY] = "entity_not_found"
             else:
                 return self.async_create_entry(
-                    title="MeteoAlarm (Geo)",
+                    title="MeteoAlarm (GeoLocator)",
                     data={CONF_MODE: MODE_GEOLOCATOR, **user_input},
                 )
         return self.async_show_form(
-            step_id="geolocator", data_schema=_geolocator_schema(), errors=errors
+            step_id="geolocator",
+            data_schema=_geolocator_schema(),
+            errors=errors,
         )
 
     @staticmethod
@@ -119,11 +122,11 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
+    # BUG FIX: Kein __init__ der self.config_entry manuell setzt –
+    # HA setzt self.config_entry automatisch (seit HA 2024.x).
+    # Manuelles Setzen ist deprecated und kann zu Fehlern führen.
 
     async def async_step_init(self, user_input=None):
-        """Erster Schritt der Optionen."""
         if user_input is not None:
             mode = user_input[CONF_MODE]
             if mode == MODE_GEOLOCATOR:
@@ -141,7 +144,8 @@ class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODE, default=current_mode
                     ): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=MODE_OPTIONS, mode=selector.SelectSelectorMode.LIST
+                            options=MODE_OPTIONS,
+                            mode=selector.SelectSelectorMode.LIST,
                         )
                     ),
                 }
@@ -158,7 +162,6 @@ class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
                 return self.async_create_entry(
                     title="", data={CONF_MODE: MODE_MANUAL, **user_input}
                 )
-
         return self.async_show_form(
             step_id="manual",
             data_schema=_manual_schema(default=list(cfg.get(CONF_COUNTRIES, []))),
@@ -169,14 +172,13 @@ class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
         errors = {}
         cfg = self.config_entry.options or self.config_entry.data
         if user_input is not None:
-            entity_id = user_input.get(CONF_GEOLOCATOR_ENTITY, "")
-            if not self.hass.states.get(entity_id):
+            entity_id = user_input.get(CONF_GEOLOCATOR_ENTITY, "").strip()
+            if not entity_id:
                 errors[CONF_GEOLOCATOR_ENTITY] = "entity_not_found"
             else:
                 return self.async_create_entry(
                     title="", data={CONF_MODE: MODE_GEOLOCATOR, **user_input}
                 )
-
         return self.async_show_form(
             step_id="geolocator",
             data_schema=_geolocator_schema(
