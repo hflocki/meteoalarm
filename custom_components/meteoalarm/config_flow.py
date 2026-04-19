@@ -118,7 +118,7 @@ class MeteoAlarmConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return MeteoAlarmOptionsFlow(config_entry)
+        return MeteoAlarmOptionsFlow()
 
 
 class MeteoAlarmOptionsFlow(config_entries.OptionsFlow):
