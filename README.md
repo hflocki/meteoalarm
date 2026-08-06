@@ -85,6 +85,7 @@ Always created, regardless of mode. Aggregates all active warnings across **all*
 ---
 
 add in cofiguration.yaml 
+```yaml
 recorder:
   exclude_attributes:
     - sensor.meteoalarm_combined
@@ -92,7 +93,7 @@ recorder:
   exclude:
     entities:
       - sensor.meteoalarm_combined
-
+```
 
 ## 📋 Dashboard Examples
 
