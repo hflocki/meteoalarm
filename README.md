@@ -84,6 +84,16 @@ Always created, regardless of mode. Aggregates all active warnings across **all*
 
 ---
 
+add in cofiguration.yaml 
+recorder:
+  exclude_attributes:
+    - sensor.meteoalarm_combined
+      # Alternativ kannst du den Sensor komplett aus dem Recorder werfen, falls er nur für Live-Anzeigen dient:
+  exclude:
+    entities:
+      - sensor.meteoalarm_combined
+
+
 ## 📋 Dashboard Examples
 
 ### Warning Detail Card
