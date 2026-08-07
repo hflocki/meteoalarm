@@ -82,6 +82,9 @@ Always created, regardless of mode. Aggregates all active warnings across **all*
 - `laender` – summary per country (name, level, count)
 - `alle_warnungen` – flat list of all warnings with country tag
 
+> **Note on Warning Lists:**  
+> To keep Home Assistant running smoothly and prevent attribute limits from overflowing when a country experiences widespread severe weather, the attribute lists (`warnungen` and `alle_warnungen`) store a maximum of 10 warnings sorted by priority. The total count entity state always reflects the real total number of warnings.
+
 ---
 
 add in cofiguration.yaml 
