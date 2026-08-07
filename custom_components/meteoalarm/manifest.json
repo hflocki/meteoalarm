@@ -4,7 +4,7 @@
   "documentation": "https://github.com/hflocki/meteoalarm",
   "requirements": [],
   "codeowners": ["@hflocki"],
-  "version": "1.3.1",
+  "version": "1.3.2",
   "iot_class": "cloud_polling",
   "config_flow": true
 }
