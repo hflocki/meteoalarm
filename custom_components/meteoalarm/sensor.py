@@ -105,14 +105,17 @@ class MeteoAlarmDetailSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
+        raw_warnings = (
+            self.coordinator.data.get("warnungen", [])
+            if self.coordinator.data
+            else []
+        )
         return {
             "country_code": self._country.upper(),
             "country_name": COUNTRIES.get(self._country, self._country.upper()),
-            "warnungen": self.coordinator.data.get("warnungen", [])
-            if self.coordinator.data
-            else [],
+            "total_warnings": len(raw_warnings),
+            "warnungen": raw_warnings[:10],
         }
-
 
 class MeteoAlarmCombinedSensor(SensorEntity):
     """Kombinierter Sensor über alle aktiven Länder.
@@ -179,10 +182,17 @@ class MeteoAlarmCombinedSensor(SensorEntity):
             }
             for w in coord.data.get("warnungen", []):
                 all_warnings.append({**w, "country": cc})
+
+        # Höchste Warnstufe nach oben sortieren
+        all_warnings.sort(
+            key=lambda x: SEVERITY_ORDER.get(x["severity"], 0), reverse=True
+        )
+
         return {
             "gesamt_warnungen": total,
             "laender": summary,
-            "alle_warnungen": all_warnings,
+            # Begrenzung auf maximal Top 10
+            "alle_warnungen": all_warnings[:10],
         }
 
     @property
