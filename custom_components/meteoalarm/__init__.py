@@ -55,7 +55,7 @@ def _parse_atom(root) -> dict:
 
     for entry in root.findall(_a("entry")):
         title = entry.findtext(_a("title"), "")
-        summary = entry.findtext(_a("summary"), "")
+        # summary = entry.findtext(_a("summary"), "")  entfernt um speicher zu sparen 
         updated = entry.findtext(_a("updated"), "")
         cap_severity = entry.findtext(_c("severity"), "")
         cap_event = entry.findtext(_c("event"), "")
@@ -75,7 +75,7 @@ def _parse_atom(root) -> dict:
         items.append(
             {
                 "headline": title,
-                "description": summary,
+                # "description": summary,  entfernt
                 "severity": severity,
                 "pubDate": updated,
                 "event": cap_event,
@@ -84,6 +84,9 @@ def _parse_atom(root) -> dict:
                 "urgency": cap_urgency,
             }
         )
+
+    # Nach Schweregrad sortieren (höchste Warnstufe zuerst)
+    items.sort(key=lambda x: SEVERITY_ORDER.get(x["severity"], 0), reverse=True)
 
     return {
         "warnungen": items,
