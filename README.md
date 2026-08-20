@@ -16,6 +16,10 @@ Designed for campers, van lifers, and travelers who cross borders and need autom
 
 ## 🚀 Installation via HACS
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=hflocki&repository=https%3A%2F%2Fgithub.com%2Fhflocki%2Fmeteoalarm&category=Weather)
+
+or
+
 1. Open **HACS** in Home Assistant
 2. Click the three dots (top right) → **Custom repositories**
 3. Add `https://github.com/hflocki/meteoalarm` as category **Integration**
