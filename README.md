@@ -1,5 +1,7 @@
 # 🚐 MeteoAlarm for Campers (Home Assistant)
 
+<img src="/logo/icon.png" alt="GeoWeather Logo" width="150">
+
 Stay safe on your European road trips! This integration brings official **MeteoAlarm.org** weather warnings directly into your Home Assistant dashboard — no API keys, no accounts, works out of the box.
 
 Designed for campers, van lifers, and travelers who cross borders and need automatic weather updates based on their current location.
