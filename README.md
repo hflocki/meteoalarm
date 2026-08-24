@@ -16,6 +16,27 @@ Designed for campers, van lifers, and travelers who cross borders and need autom
 - **Expired warnings filtered** – only currently active warnings are shown
 - **Three sensor types per country** plus one combined master sensor
 
+## 🌍 Supported Countries
+
+| Code | Flag | Country | Code | Flag | Country | Code | Flag | Country |
+|---|:---:|---|---|:---:|---|---|:---:|---|
+| AD | 🇦🇩 | Andorra | HU | 🇭🇺 | Hungary | PT | 🇵🇹 | Portugal |
+| AT | 🇦🇹 | Austria | IE | 🇮🇪 | Ireland | RO | 🇷🇴 | Romania |
+| BA | 🇧🇦 | Bosnia-Herzegovina | IL | 🇮🇱 | Israel | RS | 🇷🇸 | Serbia |
+| BE | 🇧🇪 | Belgium | IS | 🇮🇸 | Iceland | SE | 🇸🇪 | Sweden |
+| BG | 🇧🇬 | Bulgaria | IT | 🇮🇹 | Italy | SI | 🇸🇮 | Slovenia |
+| CH | 🇨🇭 | Switzerland | LT | 🇱🇹 | Lithuania | SK | 🇸🇰 | Slovakia |
+| CY | 🇨🇾 | Cyprus | LU | 🇱🇺 | Luxembourg | UA | 🇺🇦 | Ukraine |
+| CZ | 🇨🇿 | Czechia | LV | 🇱🇻 | Latvia | UK | 🇬🇧 | United Kingdom |
+| DE | 🇩🇪 | Germany | MD | 🇲🇩 | Moldova | | | |
+| DK | 🇩🇰 | Denmark | ME | 🇲🇪 | Montenegro | | | |
+| EE | 🇪🇪 | Estonia | MK | 🇲🇰 | North Macedonia | | | |
+| ES | 🇪🇸 | Spain | MT | 🇲🇹 | Malta | | | |
+| FI | 🇫🇮 | Finland | NL | 🇳🇱 | Netherlands | | | |
+| FR | 🇫🇷 | France | NO | 🇳🇴 | Norway | | | |
+| GR | 🇬🇷 | Greece | PL | 🇵🇱 | Poland | | | |
+| HR | 🇭🇷 | Croatia | | | | | | |
+
 ## 🚀 Installation via HACS
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=hflocki&repository=https%3A%2F%2Fgithub.com%2Fhflocki%2Fmeteoalarm&category=Weather)
