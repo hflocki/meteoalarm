@@ -49,13 +49,17 @@ def _parse_expires(expires_str: str):
 
 
 def _parse_atom(root) -> dict:
+    """Parst einen Atom/CAP-Feed (feeds.meteoalarm.org)."""
     items = []
     highest_severity = "Keine"
     now = datetime.now(tz=timezone.utc)
 
     for entry in root.findall(_a("entry")):
+        # Atom-Standard-ID (aus <entry><id>...</id>)
+        entry_id = entry.findtext(_a("id"), "")
+
         title = entry.findtext(_a("title"), "")
-        # summary = entry.findtext(_a("summary"), "")  entfernt um speicher zu sparen 
+        summary = entry.findtext(_a("summary"), "")
         updated = entry.findtext(_a("updated"), "")
         cap_severity = entry.findtext(_c("severity"), "")
         cap_event = entry.findtext(_c("event"), "")
@@ -74,8 +78,9 @@ def _parse_atom(root) -> dict:
 
         items.append(
             {
+                "id": entry_id,  # <--- NEU: Erforderlich für weather_alerts_card
                 "headline": title,
-                # "description": summary,  entfernt
+                "description": summary,
                 "severity": severity,
                 "pubDate": updated,
                 "event": cap_event,
