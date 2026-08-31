@@ -114,13 +114,6 @@ Always created, regardless of mode. Aggregates all active warnings across **all*
 
 ---
 
-## 🎛️ Dashboard & Custom Cards
-
-You can display warnings on your dashboard using standard Markdown cards or advanced custom components:
-
-- **Weather Alerts Card Integration:** Want to use the popular [weather-alerts-card](https://github.com/seevee/weather_alerts_card)? We provide a lightweight CAP adapter setup guide in [/doku/WEATHER_ALERTS_CARD.md](./doku/WEATHER_ALERTS_CARD.md).
-
----
 
 ### Optional: Recorder Exclusion (`configuration.yaml`)
 
